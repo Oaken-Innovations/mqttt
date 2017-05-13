@@ -1,5 +1,6 @@
 const ethjsUtil = require('ethereumjs-util');
 const mqtt = require('mqtt');
+const util = require('util');
 
 const DEFAULT_TTV = 1000*60;
 
@@ -30,13 +31,18 @@ function MQTTT(web3, account, broker, ttv) {
 MQTTT.prototype.listen = function (checkDate, callback) {
     var self = this;
     self.mqttClient.on('connect', () => {
-        self.mqttclient.subscribe(mqtttPeerAddress(self.account));
+        var topic = mqtttPeerAddress(self.account);
+        self.mqttClient.subscribe(topic);
+        console.log(util.format('Node subscribed to %s', topic));
     });
 
     self.mqttClient.on('message', (topic, msg) => {
         // -$- Checking for trusted message and peel off the addendum -$-
         var msg = msg.toString().trim(); 
-        var msgobj = JSON.parse(msgobj);
+        var msgobj = JSON.parse(msg);
+        if (msgobj.to.toLowerCase().toLowerCase() !== self.account.toLowerCase()) {
+            return callback(new Error('Message not to me!'));
+        }
         var sig = msgobj.signature;
         delete msgobj['signature'];
         var sigParams = ethjsUtil.fromRpcSig(sig); 
@@ -44,20 +50,16 @@ MQTTT.prototype.listen = function (checkDate, callback) {
         var pubkey = ethjsUtil.ecrecover(msgHash, sigParams.v, sigParams.r, sigParams.s);
         var addr = ethjsUtil.pubToAddress(pubkey);
         addr = ethjsUtil.addHexPrefix(addr.toString('hex'));
-        if (addr.toLowerCase() === msgobj.from.toLowerCase()) {
-            console.log('signature passed.');
-        } else {
+        if (addr.toLowerCase() !== msgobj.from.toLowerCase()) {
             return callback(new Error('Signature is bad, not able to process message.'));
-        }
-
+        } 
+        
         // Check date
         if (checkDate) {
             var elapsed = new Date() - new Date(msgobj.timestamp);  // in milliseconds
-            if (elapsed <= self.ttv) {
-                console.log('date passed.');
-            } else {
+            if (elapsed > self.ttv) {
                 return callback(new Error('Message exceeds time limit to be valid.'));
-            }
+            }         
         }
         callback(null, msgobj);
     });
@@ -87,3 +89,20 @@ MQTTT.prototype.send = function (to, data, type)  {
     self.mqttClient.publish(mqtttPeerAddress(to), JSON.stringify(msg));
 }
 
+/**
+ *  Stop listening and end MQTT client.
+ */
+MQTTT.prototype.stop = function() {
+    var self = this;
+    self.mqttClient.unsubscribe(mqtttPeerAddress(self.account));
+    self.mqttClient.end();
+}
+
+/**
+ * Return the node address.
+ */
+MQTTT.prototype.getAddress = function () {
+    return this.account;
+}
+
+module.exports = MQTTT;
