@@ -1,0 +1,16 @@
+{
+  "name": "mqttt",
+  "version": "1.0.0",
+  "description": "Trusted MQTT messaging.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Lexon <lexonleed@gmail.com>",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "ethereumjs-util": "^5.1.1",
+    "mqtt": "^2.7.1"
+  }
+}
