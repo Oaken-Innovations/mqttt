@@ -2,8 +2,32 @@
 
 The trusted messaging framework based on web3 and MQTT.
 
+## Installation
+
+`npm install --save mqttt`
+
 ## Usage
 
+**Message JSON format**
+```json
+{
+    "from": "",
+    "to": "",
+    "timestamp": new Date().getTime(),
+    "type": "request"/"response"/"command", 
+    "data": "",
+    "seqno": 0,
+}
+
+```
+
+**APIs**
+- client = new MQTTT(web3, address, mqtt_broker_url, [ttv])
+- client.send(to, data, type)
+- client.listen(checkDate, (err, msg) => {})
+- client.stop()
+
+**Example**
 ```javascript
 const util = require('util');
 const Web3 = require('web3');
