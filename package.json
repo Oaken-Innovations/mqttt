@@ -1,6 +1,6 @@
 {
   "name": "mqttt",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Trusted MQTT messaging.",
   "main": "index.js",
   "scripts": {
