@@ -84,9 +84,12 @@ MQTTT.prototype.send = function (to, data, type)  {
         seqno: 0,
     };
     var msgHash = self.web3.sha3(JSON.stringify(msg));
-    var signedMsg = self.web3.eth.sign(self.account, msgHash);
-    msg.signature = signedMsg;
-    self.mqttClient.publish(mqtttPeerAddress(to), JSON.stringify(msg));
+    self.web3.eth.sign(self.account, msgHash, (err, result) => {
+        if (err) throw err;
+        msg.signature = result;
+        self.mqttClient.publish(mqtttPeerAddress(to), JSON.stringify(msg));
+    });
+   
 }
 
 /**
