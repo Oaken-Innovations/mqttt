@@ -1,6 +1,6 @@
 const util = require('util');
 const Web3 = require('web3');
-const MQTTT = require('../index');
+const ttt  = require('../index');
 
 const MQTT_BROKER_TCP = 'tcp://35.166.170.137:1883';
 
@@ -8,8 +8,8 @@ var web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'));
 web3.eth.getAccounts((err, accs) => {
     if (err) throw err;
     if (accs.length === 0) throw new Error('No account!');
-    var receiver = new MQTTT(web3, accs[0], MQTT_BROKER_TCP);
-    var sender = new MQTTT(web3, accs[1], MQTT_BROKER_TCP);
+    var receiver = new ttt.MQTTT(accs[0], new ttt.signers.Web3Signer(web3),  MQTT_BROKER_TCP);
+    var sender = new ttt.MQTTT(accs[1], new ttt.signers.Web3Signer(web3), MQTT_BROKER_TCP);
     const requestMsg = "What's up";
     const responseMsg = "Very good, thank you!";
 

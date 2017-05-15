@@ -1,6 +1,6 @@
 # MQTT-Trusted
 
-The trusted messaging framework based on web3 and MQTT.
+The trusted messaging framework based on MQTT and crypto signatures.
 
 ## Installation
 
@@ -8,8 +8,9 @@ The trusted messaging framework based on web3 and MQTT.
 
 ## Usage
 
-**Message JSON format**
-```json
+### Message JSON format
+
+```bash
 {
     "from": "",
     "to": "",
@@ -21,38 +22,32 @@ The trusted messaging framework based on web3 and MQTT.
 
 ```
 
-**APIs**
-- client = new MQTTT(web3, address, mqtt_broker_url, [ttv])
+### MQTTT APIs
+
+- mqttt.deriveHDAccount(mnemonic, rpcserver, idx)
+
+
+### MQTTT Client APIs
+
+- client = new mqttt.MQTTT(address, signer, mqtt_broker_url, [ttv])
 - client.send(to, data, type)
 - client.listen(checkDate, (err, msg) => {})
 - client.stop()
 
-**Example**
-```javascript
-const util = require('util');
-const Web3 = require('web3');
-const MQTTT = require('../index'); // require('mqttt');
+### Signer APIs
 
-const MQTT_BROKER_TCP = 'tcp://ip:port'; // Change to your broker IP and Port
+- web3Signer = new mqttt.signers.Web3Singer(web3, [hashPersonal])
+- privkeySigner = new mqttt.signers.PrivKeySigner(privkey, [hashPersonal])
+- signer.sign(msg, account, callback)
+- signer.recover(msg, sig, callback)
 
-var web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'));
-web3.eth.getAccounts((err, accs) => {
-    if (err) throw err;
-    if (accs.length === 0) throw new Error('No account!');
-    var client = new MQTTT(web3, accs[0], MQTT_BROKER_TCP);
-    client.listen(true, (err, msg) => {
-        if (err) throw err;
-        console.log(util.format('%s received "%s"', client.getAddress(), msg.data));
-        
-    });
-
-    //client.send(accs[1], 'Hello, world!', 'request');
-});
-
-```
+## Examples
 
 Check `examples/` for more usages.
 
 ## License
 
 Apache-2.0
+
+
+

@@ -1,6 +1,9 @@
 const ethjsUtil = require('ethereumjs-util');
 const mqtt = require('mqtt');
+const HDWalletProvider = require('truffle-hdwallet-provider');
 const util = require('util');
+
+const signers = require('./signers');
 
 const DEFAULT_TTV = 1000*60;
 
@@ -15,10 +18,10 @@ function mqtttPeerAddress(addr) {
  * MQTT-Trusted stateless messaging.
  * @construct
  */
-function MQTTT(web3, account, broker, ttv) {
+function MQTTT(account, signer, broker, ttv) {
     var self = this;
-    self.web3 = web3;
     self.account = account;
+    self.signer = signer;
     self.mqttClient = mqtt.connect(broker);
     self.ttv = (typeof ttv === 'undefined') ? DEFAULT_TTV : ttv;
 }
@@ -45,23 +48,21 @@ MQTTT.prototype.listen = function (checkDate, callback) {
         }
         var sig = msgobj.signature;
         delete msgobj['signature'];
-        var sigParams = ethjsUtil.fromRpcSig(sig); 
-        var msgHash = ethjsUtil.sha3(JSON.stringify(msgobj));
-        var pubkey = ethjsUtil.ecrecover(msgHash, sigParams.v, sigParams.r, sigParams.s);
-        var addr = ethjsUtil.pubToAddress(pubkey);
-        addr = ethjsUtil.addHexPrefix(addr.toString('hex'));
-        if (addr.toLowerCase() !== msgobj.from.toLowerCase()) {
-            return callback(new Error('Signature is bad, not able to process message.'));
-        } 
+        self.signer.recover(JSON.stringify(msgobj), sig, (err, result) => {
+            if (err) throw err;
+            var addr = result;
+            if (addr.toLowerCase() !== msgobj.from.toLowerCase()) {
+                return callback(new Error('Signature is bad, not able to process message.'));
+            } 
+            if (checkDate) {
+                var elapsed = new Date() - new Date(msgobj.timestamp);  // in milliseconds
+                if (elapsed > self.ttv) {
+                    return callback(new Error('Message exceeds time limit to be valid.'));
+                }         
+            }
+            callback(null, msgobj);
+        });
         
-        // Check date
-        if (checkDate) {
-            var elapsed = new Date() - new Date(msgobj.timestamp);  // in milliseconds
-            if (elapsed > self.ttv) {
-                return callback(new Error('Message exceeds time limit to be valid.'));
-            }         
-        }
-        callback(null, msgobj);
     });
 
 }
@@ -83,8 +84,7 @@ MQTTT.prototype.send = function (to, data, type)  {
         data: data,
         seqno: 0,
     };
-    var msgHash = self.web3.sha3(JSON.stringify(msg));
-    self.web3.eth.sign(self.account, msgHash, (err, result) => {
+    self.signer.sign(JSON.stringify(msg), self.account, (err, result) => {
         if (err) throw err;
         msg.signature = result;
         self.mqttClient.publish(mqtttPeerAddress(to), JSON.stringify(msg));
@@ -108,4 +108,26 @@ MQTTT.prototype.getAddress = function () {
     return this.account;
 }
 
-module.exports = MQTTT;
+/**
+ * Derive a HD account for private key signer.
+ * It's based on the truffle HD wallet provider. 
+ *     https://github.com/trufflesuite/truffle-hdwallet-provider
+ * @param {String} mnemonic The mnemonic for HD wallet generation. 
+ * @param {String} rpcserver The RPC server url (ex. https://ropsten.infura.io).
+ * @param {Number} idx The account index.
+ * @returns {account, privkey}
+ */
+function deriveHDAccount(mnemonic, rpcserver, idx) {
+    var provider = new HDWalletProvider(mnemonic, rpcserver, idx)
+    return { 
+        account: provider.getAddress(), 
+        privkey: ethjsUtil.addHexPrefix(provider.wallet.getPrivateKey().toString('hex'))
+    };
+}
+
+module.exports = {
+    MQTTT: MQTTT,
+    signers: signers,
+    deriveHDAccount: deriveHDAccount
+}
+
