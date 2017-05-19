@@ -121,7 +121,8 @@ function deriveHDAccount(mnemonic, rpcserver, idx) {
     var provider = new HDWalletProvider(mnemonic, rpcserver, idx)
     return { 
         account: provider.getAddress(), 
-        privkey: ethjsUtil.addHexPrefix(provider.wallet.getPrivateKey().toString('hex'))
+        privkey: ethjsUtil.addHexPrefix(provider.wallet.getPrivateKey().toString('hex')),
+        provider: provider
     };
 }
 
