@@ -4,14 +4,19 @@ const ethjsUtil = require('ethereumjs-util');
  * Web3 signer.
  * @constructor
  * @param web3 The web3 instance.
- * @param {Boolean} hashPersonal: Whether the eth_sign of the web3 implementation
- *      adds prefix and keccack256 the prefixed message. 
+ * @param {String} signHash The hash type when signing message, including 'hash, hashPersonal, nohash'.
+ * @param {String} recoverHash The hash type when recovering message, including 'hash, hashPersonal'.
+ *      Whether the eth_sign of the web3 implementation adds prefix and keccack256 the prefixed message. 
  *      See https://github.com/ethereum/go-ethereum/pull/2940
  */
-function Web3Signer(web3, hashPersonal) {
+function Web3Signer(web3, signHash, recoverHash) {
     var self = this;
     self.web3 = web3;
-    self.hashPersonal = hashPersonal === 'undefined' ? false : hashPersonal;
+    if (typeof signHash === 'undefined' || typeof recoverHash === 'undefined') {
+        throw new Error('You need to specify signHash and recoverHash!');
+    }
+    self.signHash = signHash;
+    self.recoverHash = recoverHash;
 }
 
 /**
@@ -22,7 +27,12 @@ function Web3Signer(web3, hashPersonal) {
  */
 Web3Signer.prototype.sign = function (msg, account, callback) {
     var self = this;
-    var msgToSign = self.hashPersonal ? ethjsUtil.bufferToHex(new Buffer(msg)) : ethjsUtil.bufferToHex(ethjsUtil.sha3(msg));
+    var msgToSign = ethjsUtil.bufferToHex(new Buffer(msg));     // nohash
+    if (self.signHash === 'hash') {
+        msgToSign = ethjsUtil.bufferToHex(ethjsUtil.sha3(msg));
+    } else if (self.signHash === 'hashPersonal') {
+        msgToSign = ethjsUtil.bufferToHex(ethjsUtil.hashPersonalMessage(new Buffer(msg)));
+    }
     self.web3.eth.sign(account, msgToSign, callback);
 }
 
@@ -35,7 +45,7 @@ Web3Signer.prototype.sign = function (msg, account, callback) {
 Web3Signer.prototype.recover = function (msg, sig, callback) {
     var self = this;
     var sigParams = ethjsUtil.fromRpcSig(sig); 
-    var msgHash = self.hashPersonal ? ethjsUtil.hashPersonalMessage(new Buffer(msg)) 
+    var msgHash =  self.recoverHash === 'hashPersonal' ? ethjsUtil.hashPersonalMessage(new Buffer(msg)) 
         : ethjsUtil.sha3(msg);
     var pubkey = ethjsUtil.ecrecover(msgHash, sigParams.v, sigParams.r, sigParams.s);
     var addr = ethjsUtil.pubToAddress(pubkey);

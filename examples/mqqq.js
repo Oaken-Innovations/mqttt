@@ -8,8 +8,8 @@ var web3 = new Web3(new Web3.providers.HttpProvider('http://localhost:8545'));
 web3.eth.getAccounts((err, accs) => {
     if (err) throw err;
     if (accs.length === 0) throw new Error('No account!');
-    var receiver = new ttt.MQTTT(accs[0], new ttt.signers.Web3Signer(web3, true),  MQTT_BROKER_TCP);
-    var sender = new ttt.MQTTT(accs[1], new ttt.signers.Web3Signer(web3, true), MQTT_BROKER_TCP);
+    var receiver = new ttt.MQTTT(accs[0], new ttt.signers.Web3Signer(web3, 'nohash', 'hashPersonal'),  MQTT_BROKER_TCP);
+    var sender = new ttt.MQTTT(accs[1], new ttt.signers.Web3Signer(web3, 'nohash', 'hashPersonal'), MQTT_BROKER_TCP);
     const requestMsg = "What's up";
     const responseMsg = "Very good, thank you!";
 
