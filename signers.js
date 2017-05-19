@@ -22,7 +22,7 @@ function Web3Signer(web3, hashPersonal) {
  */
 Web3Signer.prototype.sign = function (msg, account, callback) {
     var self = this;
-    var msgToSign = self.hashPersonal ? msg : ethjsUtil.bufferToHex(ethjsUtil.sha3(msg));
+    var msgToSign = self.hashPersonal ? ethjsUtil.bufferToHex(new Buffer(msg)) : ethjsUtil.bufferToHex(ethjsUtil.sha3(msg));
     self.web3.eth.sign(account, msgToSign, callback);
 }
 
