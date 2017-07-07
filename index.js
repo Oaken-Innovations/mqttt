@@ -44,7 +44,11 @@ MQTTT.prototype.listen = function (checkDate, callback) {
         var msg = msg.toString().trim(); 
         var msgobj = JSON.parse(msg);
         if (msgobj.to.toLowerCase().toLowerCase() !== self.account.toLowerCase()) {
-            return callback(new Error('Message not to me!'));
+            return;
+        }
+        if(typeof msgobj.signature === 'undefined') {
+            msgobj.signed = false;
+            return callback(null, msgobj);
         }
         var sig = msgobj.signature;
         delete msgobj['signature'];
@@ -60,6 +64,7 @@ MQTTT.prototype.listen = function (checkDate, callback) {
                     return callback(new Error('Message exceeds time limit to be valid.'));
                 }         
             }
+            msgobj.signed = true;
             callback(null, msgobj);
         });
         
@@ -72,9 +77,11 @@ MQTTT.prototype.listen = function (checkDate, callback) {
  * @param {String} to The receiver's address ('0x325454...').
  * @param {String/Buffer} data The data payload to send.
  * @param {String} type The type of the message. ['request', 'response', 'command']
+ * @param {Boolean} Whether to sign the message.
  */
-MQTTT.prototype.send = function (to, data, type)  {
+MQTTT.prototype.send = function (to, data, type, signMsg)  {
     var self = this;
+    signMsg = typeof signMsg === 'undefined' ? true : signMsg;
     var data = typeof data === 'String' ? data : data.toString();
     var msg = {
         from: self.account,
@@ -84,11 +91,15 @@ MQTTT.prototype.send = function (to, data, type)  {
         data: data,
         seqno: 0,
     };
-    self.signer.sign(JSON.stringify(msg), self.account, (err, result) => {
-        if (err) throw err;
-        msg.signature = result;
+    if (signMsg) {
+        self.signer.sign(JSON.stringify(msg), self.account, (err, result) => {
+            if (err) throw err;
+            msg.signature = result;
+            self.mqttClient.publish(mqtttPeerAddress(to), JSON.stringify(msg));
+        });
+    } else {
         self.mqttClient.publish(mqtttPeerAddress(to), JSON.stringify(msg));
-    });
+    }
    
 }
 

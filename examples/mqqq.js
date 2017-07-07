@@ -21,7 +21,7 @@ web3.eth.getAccounts((err, accs) => {
     });
     sender.listen(true, (err, msg) => {
         if (err) throw err;
-        console.log(util.format('%s received "%s"', sender.getAddress(), msg.data));
+        console.log(util.format('%s received "%s, signed: %s"', sender.getAddress(), msg.data, msg.signed));
         receiver.stop();
         sender.stop();
     });
