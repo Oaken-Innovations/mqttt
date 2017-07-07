@@ -87,10 +87,48 @@ PrivKeySigner.prototype.recover = function (msg, sig, callback) {
 }
 
 
-function HardwareSigner() {
+/**
+ * Hardware signer.
+ * @constructor
+ * @param hsmClient The instance of the hardware secure module client.
+ * @param signHash {String} The type of the signing hash, 'hash'/'personalHash'.
+ * @param recoverHash {String} The type of the recover hash.
+ */
+function HardwareSigner(hsmClient, signHash, recoverHash) {
+    var self = this;
+    if (typeof signHash === 'undefined' || typeof recoverHash === 'undefined') {
+        throw new Error('You need to specify signHash and recoverHash!');
+    }
+    self.hsmClient = hsmClient;
+    self.signHash = signHash;
+    self.recoverHash = recoverHash;
+}
+
+HardwareSigner.prototype.sign = function (msg, account, callback) {
+    var self = this;
+    var sigBuf = new Buffer(64);
+    var recoveryBuf = new Buffer(1);
+    if (self.signHash === 'hashPersonal')
+        msg = '\u0019Ethereum Signed Message:\n' + msg.length.toString() + msg;
+    self.hsmClient.eccSign(new Buffer(msg), sigBuf, recoveryBuf);
+    var msgsig = sigBuf.toString('hex');
+    var recid = recoveryBuf.readUInt8(0) + 27;
+    callback(null, '0x' + msgsig + recid.toString(16));
+}
+
+HardwareSigner.prototype.recover = function (msg, sig, callback) {
+    var self = this;
+    var sigParams = ethjsUtil.fromRpcSig(sig); 
+    var msgHash =  self.recoverHash === 'hashPersonal' ? ethjsUtil.hashPersonalMessage(new Buffer(msg)) 
+        : ethjsUtil.sha3(msg);
+    var pubkey = ethjsUtil.ecrecover(msgHash, sigParams.v, sigParams.r, sigParams.s);
+    var addr = ethjsUtil.pubToAddress(pubkey);
+    addr = ethjsUtil.addHexPrefix(addr.toString('hex'));   
+    callback(null, addr);
 }
 
 module.exports = {
     Web3Signer: Web3Signer,
-    PrivKeySigner: PrivKeySigner
+    PrivKeySigner: PrivKeySigner,
+    HardwareSigner: HardwareSigner
 }
