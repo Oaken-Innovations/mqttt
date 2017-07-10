@@ -18,11 +18,11 @@ function mqtttPeerAddress(addr) {
  * MQTT-Trusted stateless messaging.
  * @construct
  */
-function MQTTT(account, signer, broker, ttv) {
+function MQTTT(account, signer, broker, options, ttv) {
     var self = this;
     self.account = account;
     self.signer = signer;
-    self.mqttClient = mqtt.connect(broker);
+    self.mqttClient = mqtt.connect(broker, options);
     self.ttv = (typeof ttv === 'undefined') ? DEFAULT_TTV : ttv;
 }
 
