@@ -43,8 +43,10 @@ MQTTT.prototype.listen = function (checkDate, callback) {
         // -$- Checking for trusted message and peel off the addendum -$-
         var msg = msg.toString().trim(); 
         var msgobj = JSON.parse(msg);
-        if (msgobj.to.toLowerCase().toLowerCase() !== self.account.toLowerCase()) {
-            return;
+        if (!topic.startsWith('/')) {
+            if (msgobj.to.toLowerCase().toLowerCase() !== self.account.toLowerCase()) {
+                return;
+            }
         }
         if(typeof msgobj.signature === 'undefined') {
             msgobj.signed = false;
@@ -81,6 +83,7 @@ MQTTT.prototype.listen = function (checkDate, callback) {
  */
 MQTTT.prototype.send = function (to, data, type, signMsg)  {
     var self = this;
+    var topic;
     signMsg = typeof signMsg === 'undefined' ? true : signMsg;
     var data = typeof data === 'String' ? data : data.toString();
     var msg = {
@@ -91,14 +94,19 @@ MQTTT.prototype.send = function (to, data, type, signMsg)  {
         data: data,
         seqno: 0,
     };
+    if (to.startsWith('/')) {
+        topic = to;
+    } else {
+        topic = mqtttPeerAddress(to);
+    }
     if (signMsg) {
         self.signer.sign(JSON.stringify(msg), self.account, (err, result) => {
             if (err) throw err;
             msg.signature = result;
-            self.mqttClient.publish(mqtttPeerAddress(to), JSON.stringify(msg));
+            self.mqttClient.publish(topic, JSON.stringify(msg));
         });
     } else {
-        self.mqttClient.publish(mqtttPeerAddress(to), JSON.stringify(msg));
+        self.mqttClient.publish(topic, JSON.stringify(msg));
     }
    
 }
