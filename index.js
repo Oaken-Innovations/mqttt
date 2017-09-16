@@ -111,6 +111,14 @@ MQTTT.prototype.send = function (to, data, type, signMsg)  {
    
 }
 
+MQTTT.prototype.subscribe = function (topic) {
+    self.mqttClient.subscribe(topic);
+}
+
+MQTTT.prototype.unsubscribe = function (topic) {
+    self.mqttClient.unsubscribe(topic);
+}
+
 /**
  *  Stop listening and end MQTT client.
  */
