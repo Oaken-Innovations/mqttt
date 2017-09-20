@@ -54,22 +54,25 @@ MQTTT.prototype.listen = function (checkDate, callback) {
         }
         var sig = msgobj.signature;
         delete msgobj['signature'];
-        self.signer.recover(JSON.stringify(msgobj), sig, (err, result) => {
-            if (err) throw err;
-            var addr = result;
-            if (addr.toLowerCase() !== msgobj.from.toLowerCase()) {
-                return callback(new Error('Signature is bad, not able to process message.'));
-            } 
-            if (checkDate) {
-                var elapsed = new Date() - new Date(msgobj.timestamp);  // in milliseconds
-                if (elapsed > self.ttv) {
-                    return callback(new Error('Message exceeds time limit to be valid.'));
-                }         
-            }
-            msgobj.signed = true;
-            callback(null, msgobj);
-        });
-        
+        try {
+            self.signer.recover(JSON.stringify(msgobj), sig, (err, result) => {
+                if (err) throw err;
+                var addr = result;
+                if (addr.toLowerCase() !== msgobj.from.toLowerCase()) {
+                    return callback(new Error('Signature is bad, not able to process message.'));
+                } 
+                if (checkDate) {
+                    var elapsed = new Date() - new Date(msgobj.timestamp);  // in milliseconds
+                    if (elapsed > self.ttv) {
+                        return callback(new Error('Message exceeds time limit to be valid.'));
+                    }         
+                }
+                msgobj.signed = true;
+                callback(null, msgobj);
+            });
+        } catch (err) {
+            callback(new Error('Error recovering the signature'), msgobj);
+        }
     });
 
 }
