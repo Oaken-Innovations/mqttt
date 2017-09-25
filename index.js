@@ -43,7 +43,8 @@ MQTTT.prototype.listen = function (checkDate, callback) {
         // -$- Checking for trusted message and peel off the addendum -$-
         var msg = msg.toString().trim(); 
         var msgobj = JSON.parse(msg);
-        if (!topic.startsWith('/')) {
+        // Only check target address when sending to '/mqttt'
+        if (topic.startsWith('/mqttt')) {
             if (msgobj.to.toLowerCase().toLowerCase() !== self.account.toLowerCase()) {
                 return;
             }
@@ -81,7 +82,7 @@ MQTTT.prototype.listen = function (checkDate, callback) {
  * Send MQTTT signed message.
  * @param {String} to The receiver's address ('0x325454...').
  * @param {String/Buffer} data The data payload to send.
- * @param {String} type The type of the message. ['request', 'response', 'command']
+ * @param {String} type The type of the message. 
  * @param {Boolean} Whether to sign the message.
  */
 MQTTT.prototype.send = function (to, data, type, signMsg)  {
@@ -93,7 +94,7 @@ MQTTT.prototype.send = function (to, data, type, signMsg)  {
         from: self.account,
         to: to,
         timestamp: new Date().getTime(),
-        type: type,     //'request/response/command'
+        type: type,     // Ex.'request/response/command'
         data: data,
         seqno: 0,
     };
