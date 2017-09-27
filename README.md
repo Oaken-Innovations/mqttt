@@ -1,6 +1,6 @@
-# MQTT-Trusted
+# <img src="https://ipfs.io/ipfs/QmPZBmoax3jgp5UMKBdfrvvEXat7fmc8NvyJbQXn5zgfTR" width="180" alt="MQTTT Logo">
 
-The trusted messaging framework based on MQTT and crypto signatures.
+MQTT-Trusted is the trusted messaging framework based on MQTT and crypto signatures.
 
 ## Installation
 
